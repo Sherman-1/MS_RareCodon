@@ -60,7 +60,7 @@ class Orf:
             raise TypeError('ribospike must be int')
         else:
             self._ribospike = value
-            self._frame = self.gene.start + self._ribospike
+            
 
     @property
     def frame(self):
