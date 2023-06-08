@@ -1,8 +1,6 @@
 import polars as pl
 import re
-from Bio.Seq import Seq
-from Bio.SeqIO import parse
-from data import ORF_DF_COLUMNS, GFF_POLARS
+from data import ORF_DF_COLUMNS, GFF_POLARS, RIBO_DF_COLUMNS 
 from classes import Gene, Exon
 
 
@@ -146,3 +144,13 @@ def check_double_overlap(row : tuple):
 
         orf["Ovp_gene"] = overlaps[0]
         return tuple(orf.values())
+
+
+def add_chromosome_ID(ribo_row : tuple): # deprecated
+
+    tmp = dict(zip(RIBO_DF_COLUMNS, ribo_row))
+
+    chrom_id = tmp["Seq_ID"].split("_")[0]
+
+    tmp["chromosome_ID"] = chrom_id
+    return tuple(tmp.values())

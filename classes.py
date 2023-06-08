@@ -7,8 +7,8 @@ class GenomicFeature:
 
     def __init__(self, ID : str, start : int, end : int):
         self.ID = ID
-        self.start = start - 1
-        self.end = end - 1
+        self.start = start
+        self.end = end
         self.counter = 0
 
 
@@ -91,11 +91,8 @@ class Gene(GenomicFeature):
 
             self.aORFs = OD(sorted(self.aORFs.items(), key=lambda x: x[1].start, reverse=True))
 
-    def get_adjacent_nucleotides(self, sequence, nb_codons, nb_nt):
+    def get_adjacent_codons(self, sequence, nb_codons): # Deprecated for now
 
-        if type(sequence) != Seq:
-            raise TypeError('sequence must be a Seq object')
-        
         for orf in self.orfs_list:
 
             if orf.ribostartLocalisation == "exon":
@@ -130,29 +127,68 @@ class Gene(GenomicFeature):
 
                     # Get downstream codons
                     for i in range(nb_codons):
-                        start = position - 2 - 3 * ( i + 1 )
-                        end = position - 2 - 3 * i
+                        start = position - 3 - 3 * ( i + 1 )
+                        end = position - 3 - 3 * i
                         codon = str(Seq(sequence[start:end]).reverse_complement())
                         codons_downstream.append(codon) 
 
                     # Get upstream codons
                     for j in range(nb_codons):
-                        start = position + 1 + 3 * j
-                        end = position + 1 + 3 * ( j + 1 )
+                        start = position  + 3 * j
+                        end = position + 3 * ( j + 1 )
                         codon = str(Seq(sequence[start:end]).reverse_complement())
                         codons_upstream.append(codon)
 
 
                 orf.upstream = codons_upstream
                 orf.downstream = codons_downstream
-                    
-            else: 
-                
-                orf.upstream = "NA"
-                orf.downstream = "NA"
-                
 
+    def get_adjacent_nucleotides(self, sequence, nb_nt : int):
 
+        for orf in self.orfs_list:
+
+            position = int(orf.ribostart - 1) # -1 because python starts at 0
+            strand = self.sense
+
+            if strand == "+":
+
+                # Get upstream codons
+                start = position - nb_nt 
+                end = position 
+                if start < 0:  # check if start of sequence is reached
+                    codons_upstream = sequence["seq"][:end]
+
+                else:
+                    codons_upstream = sequence["seq"][start:end]
+
+                # Get downstream codons
+                start = position + 3  
+                end = position + 3  + nb_nt
+                if end > sequence["len"]: 
+                    codons_downstream = sequence["seq"][start:]
+                else:
+                    codons_downstream = sequence["seq"][start:end]
+
+            elif strand == "-":
+
+                # Get upstream codons
+                start = position + 1  
+                end = position + 1  + nb_nt
+                if end > sequence["len"]:
+                    codons_upstream = Seq(sequence["seq"][start:]).reverse_complement()
+                else:
+                    codons_upstream = Seq(sequence["seq"][start:end]).reverse_complement()
+
+                # Get downstream codons
+                start = position - 2 - nb_nt
+                end = position - 2 
+                if start < 0:  # check if start of sequence is reached
+                    codons_downstream = Seq(sequence["seq"][:end]).reverse_complement() 
+                else:
+                    codons_downstream = Seq(sequence["seq"][start:end]).reverse_complement()
+
+            orf.upstream = str(codons_upstream)
+            orf.downstream = str(codons_downstream)
 
 class Exon(GenomicFeature):
 
@@ -166,10 +202,25 @@ class Exon(GenomicFeature):
  
 class Orf(GenomicFeature):
 
-    def __init__(self, ID, start, end, gene, ribospike : int):
+    counter = 0
+    # Allows to retrieve instance attributes from class 
+    items = ["gene","ribospike", "MSMS", "MS_sds", "MS_cond", "age_rel", 
+             "upstream", "downstream", "rel_frame", "ribostartLocalisation", "exon",
+             "start", "end", "ribostart", "ID"]
+    def __init__(self, ID, start, end, gene, MSMS, MS_sds, MS_cond, age_rel, ribospike : int):
         super().__init__(ID, start, end)
         self.gene = gene
         self.ribospike = ribospike
+        self.MSMS = MSMS
+        self.MS_sds = MS_sds
+        self.MS_cond = MS_cond
+        self.age_rel = age_rel
+        Orf.counter += 1
+        self.upstream = None
+        self.downstream = None
+        self.rel_frame = None
+        self.ribostartLocalisation = None
+        self.exon = None
 
         if self.gene.sense == "-":
             self.start, self.end = self.end, self.start
@@ -177,22 +228,21 @@ class Orf(GenomicFeature):
         else:
             self.ribostart = int(self.start + 3*self.ribospike)
             
-        self.upstream = None
-        self.downstream = None
-        self.frame = None
-
-        self.ribostartLocalisation = None
-        self.exon = None
         
-    def locRiboStart(self):
+        
+    def locRiboStart(self): 
 
         if self.gene.sense == "+":
             for exon in self.gene.exons_list:
                 if exon.start <= self.ribostart <= exon.end:
                     self.ribostartLocalisation = "exon"
                     self.exon = exon
-                    self.frame = abs(self.exon.start - self.ribostart) % 3
-                    return
+                    self.rel_frame = abs(self.exon.start - self.ribostart) % 3
+                    if self.rel_frame == 0:
+                        Warning(f"RiboStart {self.ID} is in frame with exon {self.exon.ID}")
+                        return 1
+                    else:
+                        return 
                 
             if self.gene.start <= self.ribostart < self.gene.exons_list[0].start:
                 self.ribostartLocalisation = "5UTR"
@@ -219,9 +269,12 @@ class Orf(GenomicFeature):
                 if exon.end <= self.ribostart <= exon.start:
                     self.exon = exon
                     self.ribostartLocalisation = "exon"
-                    self.frame = abs(self.exon.start - self.ribostart) % 3
-
-                    return
+                    self.rel_frame = abs(self.exon.start - self.ribostart) % 3
+                    if self.rel_frame == 0:
+                        Warning(f"RiboStart {self.ID} is in frame with exon {self.exon.ID}")
+                        return 1
+                    else:
+                        return 
                 
             if self.gene.exons_list[0].start < self.ribostart <= self.gene.start:
                 self.ribostartLocalisation = "5UTR"

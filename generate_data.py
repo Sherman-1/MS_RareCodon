@@ -1,10 +1,13 @@
 import polars as pl
 import utils
 from classes import Orf
-from data import ORFS, GFF, GFF_POLARS, ORF_DF_COLUMNS, FASTA_DICT, RIBO
+from data import ORFS, GFF, GFF_POLARS, ORF_DF_COLUMNS, FASTA_DICT, RIBO, NB_NT
+from halo import Halo
 
 
-def generate_data():
+
+@Halo(text='Parsing input files ...', spinner='dots')
+def parse_input():
 
     same_CDS_dframe = (
         ORFS
@@ -20,10 +23,16 @@ def generate_data():
 
     same_CDS_dframe.columns = ORF_DF_COLUMNS
 
-    grouped = same_CDS_dframe.groupby("Ovp_gene")
+    joined = same_CDS_dframe.join(RIBO, left_on = "ID", right_on = "Seq_ID", how = "inner")
+
+
+    return joined.groupby("Ovp_gene")
+
+
+@Halo(text='Generating data ...', spinner='dots')
+def extract_data(grouped):
 
     gene_list = list()
-
 
     for overlapped_feature_name , data in grouped: # This loop returns the name by which data is groupped, and the data itself as a polars dataframe
 
@@ -36,14 +45,16 @@ def generate_data():
             # Iterate over every ORF that overlaps the gene
             for row in data.iter_rows(named = True):
 
-                ribospike = 7 # For now, don't know how data will look like
-
                 orf = Orf(
                     ID = row["ID"],
                     start = int(row["Start"]),
                     end = int(row["End"]),
                     gene = gene,
-                    ribospike = ribospike
+                    ribospike = int(row["first.codon.idx"]),
+                    MSMS = row["MSMS"],
+                    MS_sds = row["msms.ynb.sds"],
+                    MS_cond = row["msms.ynb.sds.mg132"],
+                    age_rel = row["Relative.age"]
                     )
 
                 orf.locRiboStart()
@@ -51,10 +62,13 @@ def generate_data():
                 gene.add_orf(key = orf.ID, 
                             value = orf)
 
-            gene.get_adjacent_nucleotides(FASTA_DICT[gene.chromosome]["seq"], nb_codons = 3, nb_nt = 10)
-
+            gene.get_adjacent_nucleotides(FASTA_DICT[gene.chromosome], nb_nt = NB_NT)
             gene_list.append(gene)
+            
+    print("\nNumber of ORFs processed : ")
+    print(Orf.counter)
 
     return gene_list
+
 
 
