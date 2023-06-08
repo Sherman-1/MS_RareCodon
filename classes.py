@@ -93,8 +93,9 @@ class Gene(GenomicFeature):
 
     def get_adjacent_nucleotides(self, sequence, nb_codons, nb_nt):
 
-        sequence = Seq(sequence)
-
+        if type(sequence) != Seq:
+            raise TypeError('sequence must be a Seq object')
+        
         for orf in self.orfs_list:
 
             if orf.ribostartLocalisation == "exon":
