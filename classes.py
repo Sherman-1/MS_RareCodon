@@ -207,7 +207,7 @@ class Orf(GenomicFeature):
     items = ["gene","ribospike", "MSMS", "MS_sds", "MS_cond", "age_rel", 
              "upstream", "downstream", "rel_frame", "ribostartLocalisation", "exon",
              "start", "end", "ribostart", "ID"]
-    def __init__(self, ID, start, end, gene, MSMS, MS_sds, MS_cond, age_rel, ribospike : int):
+    def __init__(self, ID, start, end, gene, MSMS, MS_sds, MS_cond, age_rel, start_seq, ribospike : int):
         super().__init__(ID, start, end)
         self.gene = gene
         self.ribospike = ribospike
@@ -215,6 +215,7 @@ class Orf(GenomicFeature):
         self.MS_sds = MS_sds
         self.MS_cond = MS_cond
         self.age_rel = age_rel
+        self.start_seq = start_seq
         Orf.counter += 1
         self.upstream = None
         self.downstream = None
