@@ -1,5 +1,6 @@
 from classes import Orf
 import csv
+from data import NB_NT
 
 
 def write_data(gene_list, filename = "output/output.csv"):
@@ -9,7 +10,7 @@ def write_data(gene_list, filename = "output/output.csv"):
              "start", "end", "ribostart","start_seq"] 
     
     colnames = attribute_names.copy()
-    colnames.extend(["gene","sense","chromosome"])
+    colnames.extend(["gene","sense","NB_NT"])
     
     
     with open(filename, mode="w", newline="") as file:
@@ -21,8 +22,8 @@ def write_data(gene_list, filename = "output/output.csv"):
             for orf in gene.orfs_list:
 
                 row = [orf.__dict__.get(attr_name, "") for attr_name in attribute_names]
-                row.extend([gene.ID,gene.sense,gene.chromosome])
+                row.extend([gene.ID,gene.sense,NB_NT])
 
                 writer.writerow(row)
 
-            
+

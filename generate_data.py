@@ -6,7 +6,7 @@ from halo import Halo
 
 
 
-@Halo(text='Parsing input files ...', spinner='dots')
+@Halo(text='Parsing input files ...\n', spinner='dots')
 def parse_input():
 
     same_CDS_dframe = (
@@ -29,7 +29,7 @@ def parse_input():
     return joined.groupby("Ovp_gene")
 
 
-@Halo(text='Generating data ...', spinner='dots')
+@Halo(text='Generating data ...\n', spinner='dots')
 def extract_data(grouped):
 
     gene_list = list()

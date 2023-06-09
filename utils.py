@@ -29,6 +29,7 @@ def return_gene_infos(gene_infos) -> dict:
     start = gene_infos["Start"].to_list()[0]
     end = gene_infos["End"].to_list()[0]
     sense = gene_infos["Strand"].to_list()[0]
+    frame = gene_infos["Phase"].to_list()[0]
     
     return {
 
@@ -36,7 +37,8 @@ def return_gene_infos(gene_infos) -> dict:
         "start" : int(start),
         "end" : int(end),
         "sense" : sense,
-        "multi" : multi
+        "multi" : multi,
+        "frame" : frame
     } 
 
 def init_gene_object(gene_id, gff_dataframe):
@@ -89,7 +91,7 @@ def init_gene_object(gene_id, gff_dataframe):
                         gene = gene,
                         start = int(exon["Start"]),
                         end = int(exon["End"]),
-                        abs_frame = int(exon["Start"]) % 3)
+                        abs_frame = int(exon["Phase"]))
         )
 
         cds_counter = cds_counter + 1

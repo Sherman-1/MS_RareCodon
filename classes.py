@@ -2,7 +2,6 @@ from Bio.Seq import Seq
 from collections import OrderedDict as OD
 
 
-
 class GenomicFeature:
 
     def __init__(self, ID : str, start : int, end : int):
@@ -240,29 +239,37 @@ class Orf(GenomicFeature):
                     self.exon = exon
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        Warning(f"RiboStart {self.ID} is in frame with exon {self.exon.ID}")
-                        return 1
+                        corrected_frame = abs((exon.start + exon.abs_frame) - self.ribostart) % 3
+                        self.rel_frame = corrected_frame
+                        if corrected_frame == 0:
+                            print(f"Problem with {self.ID}")
+                        return
                     else:
                         return 
                 
             if self.gene.start <= self.ribostart < self.gene.exons_list[0].start:
                 self.ribostartLocalisation = "5UTR"
+                self.rel_frame = 0
                 return
             
             elif self.gene.exons_list[-1].end < self.ribostart <= self.gene.end:
                 self.ribostartLocalisation = "3UTR"
+                self.rel_frame = 0
                 return
 
             elif self.ribostart < self.gene.start:
                 self.ribostartLocalisation = "upstream"
+                self.rel_frame = 0
                 return
             
             elif self.ribostart > self.gene.end:
                 self.ribostartLocalisation = "downstream"
+                self.rel_frame = 0
                 return
             
             else:
                 self.ribostartLocalisation = "intron"
+                self.rel_frame = 0
                 return
             
         elif self.gene.sense == "-":
@@ -272,29 +279,37 @@ class Orf(GenomicFeature):
                     self.ribostartLocalisation = "exon"
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        Warning(f"RiboStart {self.ID} is in frame with exon {self.exon.ID}")
-                        return 1
+                        corrected_frame = abs(self.ribostart - (exon.start - exon.abs_frame)) % 3
+                        self.rel_frame = corrected_frame
+                        if corrected_frame == 0:
+                            print(f"Problem with {self.ID}")
+                        return
                     else:
                         return 
                 
             if self.gene.exons_list[0].start < self.ribostart <= self.gene.start:
                 self.ribostartLocalisation = "5UTR"
+                self.rel_frame = 0
                 return
             
             elif self.gene.end <= self.ribostart < self.gene.exons_list[-1].end:
                 self.ribostartLocalisation = "3UTR"
+                self.rel_frame = 0
                 return
 
             elif self.ribostart > self.gene.start:
                 self.ribostartLocalisation = "upstream"
+                self.rel_frame = 0
                 return
             
             elif self.ribostart < self.gene.end:
                 self.ribostartLocalisation = "downstream"
+                self.rel_frame = 0
                 return
             
             else:
                 self.ribostartLocalisation = "intron"
+                self.rel_frame = 0
                 return
             
 
