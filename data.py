@@ -21,6 +21,8 @@ FASTA_DICT = multifasta_to_dict("input/Scer.fna", genome = True)
 
 NB_NT = 10
 
+MAX_CODONS = 3
+
 spinner.stop()
 
 ORF_DF_COLUMNS = ['Seqid',

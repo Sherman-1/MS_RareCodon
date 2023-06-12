@@ -63,7 +63,7 @@ def extract_data(grouped):
                 gene.add_orf(key = orf.ID, 
                             value = orf)
 
-            gene.get_adjacent_nucleotides(FASTA_DICT[gene.chromosome], nb_nt = NB_NT)
+            gene.get_adjacent_nucleotides(FASTA_DICT[gene.chromosome])
             gene_list.append(gene)
             
     print("\nNumber of ORFs processed : ")
