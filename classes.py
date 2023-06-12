@@ -250,26 +250,31 @@ class Orf(GenomicFeature):
             if self.gene.start <= self.ribostart < self.gene.exons_list[0].start:
                 self.ribostartLocalisation = "5UTR"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             elif self.gene.exons_list[-1].end < self.ribostart <= self.gene.end:
                 self.ribostartLocalisation = "3UTR"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
 
             elif self.ribostart < self.gene.start:
                 self.ribostartLocalisation = "upstream"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             elif self.ribostart > self.gene.end:
                 self.ribostartLocalisation = "downstream"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             else:
                 self.ribostartLocalisation = "intron"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
         elif self.gene.sense == "-":
@@ -290,26 +295,31 @@ class Orf(GenomicFeature):
             if self.gene.exons_list[0].start < self.ribostart <= self.gene.start:
                 self.ribostartLocalisation = "5UTR"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             elif self.gene.end <= self.ribostart < self.gene.exons_list[-1].end:
                 self.ribostartLocalisation = "3UTR"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
 
             elif self.ribostart > self.gene.start:
                 self.ribostartLocalisation = "upstream"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             elif self.ribostart < self.gene.end:
                 self.ribostartLocalisation = "downstream"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
             else:
                 self.ribostartLocalisation = "intron"
                 self.rel_frame = 0
+                self.exon = "NA"
                 return
             
 
