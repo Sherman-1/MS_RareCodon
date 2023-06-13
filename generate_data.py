@@ -3,6 +3,7 @@ import utils
 from classes import Orf
 from data import ORFS, GFF, GFF_POLARS, ORF_DF_COLUMNS, FASTA_DICT, RIBO, NB_NT
 from halo import Halo
+import time
 
 
 
@@ -41,7 +42,6 @@ def extract_data(grouped):
 
             # Initialize gene object with the name of the overlapped feature
             gene = utils.init_gene_object(overlapped_feature_name, GFF)
-
             # Iterate over every ORF that overlaps the gene
             for row in data.iter_rows(named = True):
 
@@ -59,6 +59,7 @@ def extract_data(grouped):
                     )
 
                 orf.locRiboStart()
+                orf.get_exon_dist()
 
                 gene.add_orf(key = orf.ID, 
                             value = orf)
@@ -73,3 +74,8 @@ def extract_data(grouped):
 
 
 
+if __name__ == "__main__":
+
+    grouped = parse_input()
+    extract_data(grouped)
+    

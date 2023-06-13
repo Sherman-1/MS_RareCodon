@@ -51,7 +51,7 @@ def init_gene_object(gene_id, gff_dataframe):
     
     """
 
-    pattern = fr".*{gene_id}.*"
+    pattern = fr".*{gene_id}.*" # fr"\b{gene_id}\b"
 
     parent, name = get_good_column_names(gff_dataframe.columns)
 
@@ -61,6 +61,13 @@ def init_gene_object(gene_id, gff_dataframe):
         gff_dataframe[name].str.contains(pattern, regex=True, na=False)
     ]) # Get all rows related to the gene being initialized
 
+    if gene_rows["Type"].to_list().count("gene") > 1:
+
+        names = gene_rows[name].to_list()
+        names = [gene for gene in names if not re.search(r"-", gene)]
+        rows = gene_rows.to_pandas()
+        
+        gene_rows = pl.from_pandas(rows[rows["Name"].isin(names)])
 
     
     gene_infos = return_gene_infos(gene_rows)

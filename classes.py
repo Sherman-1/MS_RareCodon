@@ -25,7 +25,6 @@ class Gene(GenomicFeature):
         self.aORFs = OD()
         self._exons = OD()
         Gene.counter += 1
-        
 
     @property
     def exons(self):
@@ -67,19 +66,24 @@ class Gene(GenomicFeature):
         else:
             self.aORFs[key] = value
 
-    
     def sort(self):
 
         if self.sense == "+":
 
             if int(self.start) > int(self.end) : self.start, self.end = self.end, self.start
             self._exons = OD(sorted(self._exons.items(), key=lambda x: x[1].start))
-            
+                          
 
         elif self.sense == "-":
 
             if int(self.end) > int(self.start) : self.start, self.end = self.end, self.start
             self._exons = OD(sorted(self._exons.items(), key=lambda x: x[1].start, reverse=True))
+
+        for i,exon in enumerate(self.exons_list):
+
+                exon.number = i 
+
+    
 
     def sort_aorfs(self):
 
@@ -90,58 +94,6 @@ class Gene(GenomicFeature):
         elif self.sense == "-":
 
             self.aORFs = OD(sorted(self.aORFs.items(), key=lambda x: x[1].start, reverse=True))
-
-    def get_adjacent_codons(self, sequence, nb_codons): # Deprecated for now
-
-        for orf in self.orfs_list:
-
-            if orf.ribostartLocalisation == "exon":
-
-                
-                position = orf.ribostart
-                strand = self.sense
-                codons_upstream = []
-                codons_downstream = []
-                
-                if strand == "+":
-
-                    # Get upstream codons
-                    for i in range(nb_codons):
-                        start = position -1 - 3 * (i + 1)
-                        end = position - 1 - 3 * i
-                        if start < 0:  # check if start of sequence is reached
-                            break
-                        codon = sequence[start:end]
-                        codons_upstream.append(codon)
-                    
-                    # Get downstream codons
-                    for j in range(nb_codons):
-                        start = position + 2 + 3 * j 
-                        end = position + 2 + 3 * (j + 1)
-                        if end > len(sequence):  # check if end of sequence is reached
-                            break
-                        codon = sequence[start:end]
-                        codons_downstream.append(codon) 
-
-                elif strand == "-":
-
-                    # Get downstream codons
-                    for i in range(nb_codons):
-                        start = position - 3 - 3 * ( i + 1 )
-                        end = position - 3 - 3 * i
-                        codon = str(Seq(sequence[start:end]).reverse_complement())
-                        codons_downstream.append(codon) 
-
-                    # Get upstream codons
-                    for j in range(nb_codons):
-                        start = position  + 3 * j
-                        end = position + 3 * ( j + 1 )
-                        codon = str(Seq(sequence[start:end]).reverse_complement())
-                        codons_upstream.append(codon)
-
-
-                orf.upstream = codons_upstream
-                orf.downstream = codons_downstream
 
     def get_adjacent_nucleotides(self, sequence):
 
@@ -249,16 +201,18 @@ class Gene(GenomicFeature):
             orf.upstream = str(codons_upstream)
             orf.downstream = str(codons_downstream)
                     
-
 class Exon(GenomicFeature):
 
     def __init__(self, ID, start, end, gene : Gene, abs_frame : int):
         super().__init__(ID, start, end )
         self.abs_frame = abs_frame
         self.gene = gene
+        self.number = None
 
         if self.gene.sense == "-":
             self.start, self.end = self.end, self.start
+        self.length = abs(self.end - self.start) + 1
+
  
 class Orf(GenomicFeature):
 
@@ -282,6 +236,7 @@ class Orf(GenomicFeature):
         self.rel_frame = None
         self.ribostartLocalisation = None
         self.exon = None
+        self.dist_exon = None
 
         if self.gene.sense == "-":
             self.start, self.end = self.end, self.start
@@ -385,6 +340,33 @@ class Orf(GenomicFeature):
                 self.exon = "NA"
                 return
             
+    def get_exon_dist(self):
+
+        if self.exon != "NA":
+
+            if self.gene.multi == False:
+                
+                self.exon_dist = abs(self.exon.start - self.ribostart) + 1
+            
+            else:
+
+                if self.exon.number > 0:
+
+                    dist = 0
+                    for i in range(self.exon.number):
+
+                        dist += self.gene.exons_list[i].length
+                        print(f"length exon {i} : {self.gene.exons_list[i].length}")
+                    dist += 1 + abs(self.exon.start - self.ribostart) + self.exon.abs_frame
+                    self.exon_dist = dist
+                    print(f"Exon start : {self.exon.start}")
+                    print(f"Ribo start : {self.ribostart}")
+                    print(f"Frame correction : {self.exon.abs_frame}")
+                    print(f"ORF : {self.ID} has dist : {self.exon_dist}")
+
+
+
+
 
 class GeneStructureError(Exception):
     def __init__(self, message):
