@@ -10,8 +10,12 @@ def main():
     return 0
 
 if __name__ == "__main__":
+    
+    Art=text2art("ORFribo+",font='block',chr_ignore=True) 
+    print(Art)
+
     main()
 
-    Art=text2art("RUN FINISHED",font='block',chr_ignore=True) # Return ASCII text with block font
+    Art=text2art("RUN FINISHED",font='block',chr_ignore=True) 
     print(Art)  
 

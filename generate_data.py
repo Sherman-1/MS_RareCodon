@@ -56,6 +56,10 @@ def extract_data(grouped):
                     MS_cond = row["msms.ynb.sds.mg132"],
                     age_rel = row["Relative.age"],
                     start_seq = row["first.codon"],
+                    reads = row["Num_reads"],
+                    p0 = row["Num_p0"],
+                    p1 = row["Num_p1"],
+                    p2 = row["Num_p2"]
                     )
 
                 orf.locRiboStart()

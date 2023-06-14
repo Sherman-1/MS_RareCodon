@@ -208,10 +208,14 @@ class Exon(GenomicFeature):
         self.abs_frame = abs_frame
         self.gene = gene
         self.number = None
-
+        
         if self.gene.sense == "-":
             self.start, self.end = self.end, self.start
         self.length = abs(self.end - self.start) + 1
+        if self.gene.sense == "+":
+            self.start += self.abs_frame
+        elif self.gene.sense == "-":
+            self.start -= self.abs_frame
 
  
 class Orf(GenomicFeature):
@@ -221,7 +225,8 @@ class Orf(GenomicFeature):
     items = ["gene","ribospike", "MSMS", "MS_sds", "MS_cond", "age_rel", 
              "upstream", "downstream", "rel_frame", "ribostartLocalisation", "exon",
              "start", "end", "ribostart", "ID"]
-    def __init__(self, ID, start, end, gene, MSMS, MS_sds, MS_cond, age_rel, start_seq, ribospike : int):
+    def __init__(self, ID, start, end, gene, MSMS, reads, p0, p1, p2,
+                 MS_sds, MS_cond, age_rel, start_seq, ribospike : int):
         super().__init__(ID, start, end)
         self.gene = gene
         self.ribospike = ribospike
@@ -229,6 +234,10 @@ class Orf(GenomicFeature):
         self.MS_sds = MS_sds
         self.MS_cond = MS_cond
         self.age_rel = age_rel
+        self.reads = reads
+        self.p0 = p0
+        self.p1 = p1
+        self.p2 = p2
         self.start_seq = start_seq
         Orf.counter += 1
         self.upstream = None
@@ -251,18 +260,14 @@ class Orf(GenomicFeature):
         if self.gene.sense == "+":
             for exon in self.gene.exons_list:
                 if exon.start <= self.ribostart <= exon.end:
-                    self.ribostartLocalisation = "exon"
                     self.exon = exon
+                    self.ribostartLocalisation = "exon"
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        corrected_frame = abs((exon.start + exon.abs_frame) - self.ribostart) % 3
-                        self.rel_frame = corrected_frame
-                        exon.start += exon.abs_frame
-                        if corrected_frame == 0:
-                            print(f"Problem with {self.ID}")
-                        return
-                    else:
-                        return 
+                        print(f"Problem with orf {self.ID} gene {self.gene.ID}")
+                        print(f"Multi : {self.gene.multi}, RS : {self.ribostart}")
+                        print(f"Exon start : {self.exon.start}")
+                    return 
                 
             if self.gene.start <= self.ribostart < self.gene.exons_list[0].start:
                 self.ribostartLocalisation = "5UTR"
@@ -301,14 +306,11 @@ class Orf(GenomicFeature):
                     self.ribostartLocalisation = "exon"
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        corrected_frame = abs(self.ribostart - (exon.start - exon.abs_frame)) % 3
-                        self.rel_frame = corrected_frame
-                        exon.start -= exon.abs_frame
-                        if corrected_frame == 0:
-                            print(f"Problem with {self.ID}")
-                        return
-                    else:
-                        return 
+                        print(f"Problem with orf {self.ID} gene {self.gene.ID}")
+                        print(f"Multi : {self.gene.multi}, RS : {self.ribostart}")
+                        print(f"Exon start : {self.exon.start}")
+                        
+                    return
                 
             if self.gene.exons_list[0].start < self.ribostart <= self.gene.start:
                 self.ribostartLocalisation = "5UTR"
@@ -346,24 +348,20 @@ class Orf(GenomicFeature):
 
             if self.gene.multi == False:
                 
-                self.exon_dist = abs(self.exon.start - self.ribostart) + 1
+                self.exon_dist = abs(self.exon.start - self.ribostart)
             
             else:
 
                 if self.exon.number > 0:
 
                     dist = 0
-                    print(f"Number of exons : {len(self.gene.exons_list)}")
                     for i in range(self.exon.number):
 
                         dist += self.gene.exons_list[i].length
-                        print(dist)
 
-                    dist += abs(self.exon.start - self.ribostart) + self.exon.abs_frame + 1
+                    dist += abs(self.exon.start - self.ribostart) + self.exon.abs_frame 
                     self.exon_dist = dist
-                    print(f"ORF {self.ID} is in exon {self.exon.number} and has ribostart at {self.ribostart} and exon start at {self.exon.start}")
-                    print(f"Correction : {self.exon.abs_frame}")    
-                    print(f"dist : {dist}\n\n")
+                    
 
 
 class GeneStructureError(Exception):

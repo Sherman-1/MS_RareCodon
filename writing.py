@@ -7,7 +7,7 @@ def write_data(gene_list, filename = "output/output.csv"):
 
     attribute_names = ["ID","ribospike", "MSMS", "MS_sds", "MS_cond", "age_rel", 
              "upstream", "downstream", "rel_frame", "ribostartLocalisation",
-             "start", "end", "ribostart","start_seq"] 
+             "start", "end", "ribostart","start_seq", "reads", "p0", "p1", "p2"]
     
     colnames = attribute_names.copy()
     colnames.extend(["gene","sense","NB_NT","exon_start"])
