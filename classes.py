@@ -353,19 +353,17 @@ class Orf(GenomicFeature):
                 if self.exon.number > 0:
 
                     dist = 0
+                    print(f"Number of exons : {len(self.gene.exons_list)}")
                     for i in range(self.exon.number):
 
                         dist += self.gene.exons_list[i].length
-                        print(f"length exon {i} : {self.gene.exons_list[i].length}")
-                    dist += 1 + abs(self.exon.start - self.ribostart) + self.exon.abs_frame
+                        print(dist)
+
+                    dist += abs(self.exon.start - self.ribostart) + self.exon.abs_frame + 1
                     self.exon_dist = dist
-                    print(f"Exon start : {self.exon.start}")
-                    print(f"Ribo start : {self.ribostart}")
-                    print(f"Frame correction : {self.exon.abs_frame}")
-                    print(f"ORF : {self.ID} has dist : {self.exon_dist}")
-
-
-
+                    print(f"ORF {self.ID} is in exon {self.exon.number} and has ribostart at {self.ribostart} and exon start at {self.exon.start}")
+                    print(f"Correction : {self.exon.abs_frame}")    
+                    print(f"dist : {dist}\n\n")
 
 
 class GeneStructureError(Exception):
