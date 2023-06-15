@@ -4,7 +4,7 @@ from data import ORF_DF_COLUMNS, GFF_POLARS, RIBO_DF_COLUMNS
 from classes import Gene, Exon
 
 
-def get_good_column_names(columns):
+def getGoodColumnNames(columns):
 
 
     parent_col = [col for col in columns if re.match(r"[Pp]arent", col)]
@@ -19,7 +19,7 @@ def get_good_column_names(columns):
         raise AttributeError("Problem with GFF columns : Parent or Name not found. See get_good_column_names()")
         
 
-def return_gene_infos(gene_infos) -> dict:
+def returnGeneInfos(gene_infos) -> dict:
 
     chromosome = gene_infos["Seqid"].unique().to_list()[0]
     multi = gene_infos["Type"].to_list().count("CDS") > 1
@@ -41,7 +41,7 @@ def return_gene_infos(gene_infos) -> dict:
         "frame" : frame
     } 
 
-def init_gene_object(gene_id, gff_dataframe):
+def initGeneObject(gene_id, gff_dataframe):
 
 
     """
@@ -53,7 +53,7 @@ def init_gene_object(gene_id, gff_dataframe):
 
     pattern = fr".*{gene_id}.*" # fr"\b{gene_id}\b"
 
-    parent, name = get_good_column_names(gff_dataframe.columns)
+    parent, name = getGoodColumnNames(gff_dataframe.columns)
 
     # Polars does not support regex filtering : pandas is used instead
     gene_rows = pl.from_pandas(gff_dataframe[
@@ -61,16 +61,18 @@ def init_gene_object(gene_id, gff_dataframe):
         gff_dataframe[name].str.contains(pattern, regex=True, na=False)
     ]) # Get all rows related to the gene being initialized
 
+    # If regex pattern matches multiple genes
     if gene_rows["Type"].to_list().count("gene") > 1:
 
         names = gene_rows[name].to_list()
+        # Pattern geneId often matches smthng like geneId and geneId-A 
+        # We want to keep only the first one
         names = [gene for gene in names if not re.search(r"-", gene)]
         rows = gene_rows.to_pandas()
-        
         gene_rows = pl.from_pandas(rows[rows["Name"].isin(names)])
 
     
-    gene_infos = return_gene_infos(gene_rows)
+    gene_infos = returnGeneInfos(gene_rows)
 
 
     gene = Gene(

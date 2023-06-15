@@ -95,112 +95,172 @@ class Gene(GenomicFeature):
 
             self.aORFs = OD(sorted(self.aORFs.items(), key=lambda x: x[1].start, reverse=True))
 
-    def get_adjacent_nucleotides(self, sequence):
+    def getAdjacentNucleotides(self, sequence):
 
         for orf in self.orfs_list:
 
-            position = int(orf.ribostart - 1) # -1 because python starts at 0
-            strand = self.sense
-            codons = MAX_CODONS * 3 + 2 # This way, we get enough nucleotides to get MAX_CODONS codons regardless of the relative frame of the ribostartk
+            # Here we declare the constants that are indexed from 0
+            # to avoid confusion with +1/-1 corrections related to 
+            # the biological indexing of the sequence
+            POSITION = int(orf.ribostart - 1) # -1 for python indexing
+             # -1 for python indexing
+            STRAND = self.sense
+            CODONS = MAX_CODONS * 3 + 2 # This way, we get enough nucleotides to get MAX_CODONS codons regardless of the relative frame of the ribostart
 
             
             if orf.ribostartLocalisation == "exon":
+                EXON_END = orf.exon.end - 1 # -1 for python indexing
+                EXON_START = orf.exon.start - 1 # -1 for python indexing
 
-                if strand == "+":
+                if STRAND == "+":
 
-                    # Get upstream nucleotides
-                    if abs( orf.exon.start - position - 1 ) > codons:
-                        start = position - codons
+                    ## Get upstream nucleotides
+                    if abs( EXON_START - POSITION + 1 ) > CODONS:
+                        start = POSITION - CODONS
                     else:
-                        start = orf.exon.start - 1 # -1 for python indexing
+                        start = EXON_START
                 
-                    end = position # Not position - 1 because in seq[a:b] b is not included
-
+                    end = POSITION # Not position - 1 because in seq[a:b] b is not included
+                    if end < start:
+                        print(f"start : {start}")
+                        print(f"end : {end}")
+                        print(f"orf.exon.end : {orf.exon.end}")
+                        print(f"position : {POSITION}")
+                        print(f"orf.ID : {orf.ID}")
+                        print(f"codons : {CODONS}")
+                        print(f"orf.ribostart : {orf.ribostart}")
+                        raise ValueError
                     codons_upstream = sequence["seq"][start:end]
-                    if len(codons_upstream) > codons:
-                        print(f"{orf.ID} length up : {len(codons_upstream)}")
+                    if len(codons_upstream) == 0:
+                        pass
+                    if len(codons_upstream) > CODONS:
+                        raise ValueError
                     
                     
                 
-                    # Get downstream nucleotides
-                    start = position + 3 
+                    ## Get downstream nucleotides
+                    start = POSITION + 3 
 
-                    if abs(orf.exon.end - start) > codons:
-                        end = start + codons 
+                    if abs(EXON_END - start) > CODONS:
+                        end = start + CODONS 
                     else:
-                        end = orf.exon.end + 1 - 1 # +1 because in seq[a:b] b is not included, -1 for python indexing
-                        
+                        end = EXON_END + 1 # +1 because in seq[a:b] b is not included, -1 for python indexing
+                    if end < start:
+                        print(f"start : {start}")
+                        print(f"end : {end}")
+                        print(f"orf.exon.end : {orf.exon.end}")
+                        print(f"position : {POSITION}")
+                        print(f"orf.ID : {orf.ID}")
+                        print(f"codons : {CODONS}")
+                        print(f"orf.ribostart : {orf.ribostart}")
+                        raise ValueError
                     codons_downstream = sequence["seq"][start:end]
-                    if len(codons_downstream) > codons:
-                        print(f"{orf.ID} length down : {len(codons_downstream)}")
+                    if len(codons_downstream) == 0:
+                       pass
+                    if len(codons_downstream) > CODONS:
+                        raise ValueError("Too many downstream nucleotides for orf {orf.ID}")
 
-                    
-                    
+                elif STRAND == "-":
 
-                elif strand == "-":
-
-                    # Get upstreams nucleotides
-                    start = position + 1
-
-                    if abs(orf.exon.end + 1 - position + 1 ) > codons:
-                        end = start + codons 
+                    ## Get upstream nucleotides
+                    # +1 to get upstreams nucleotides
+                    start = POSITION + 1
+                    if abs(EXON_START - POSITION + 1 ) > CODONS:
+                        end = start + CODONS 
                     else:
-                        end = orf.exon.end + 1 - 1 # -1 for python indexing, +1 because in seq[a:b] b is not included
+                        end = EXON_START + 1 # +1 because in seq[a:b] b is not included
+
+
+                    # If end < start, print the details of the operations that led to this error
+                    if end < start:
+                        print(f"start : {start}")
+                        print(f"end : {end}")
+                        print(f"orf.exon.end : {orf.exon.end}")
+                        print(f"position : {POSITION}")
+                        print(f"orf.ID : {orf.ID}")
+                        print(f"codons : {CODONS}")
+                        print(f"orf.ribostart : {orf.ribostart}")
+                        raise ValueError
+
 
                     codons_upstream = str(Seq(sequence["seq"][start:end]).reverse_complement())
-                    if len(codons_upstream) > codons:
+                   
+                    if len(codons_upstream) > CODONS:
                         print(f"{orf.ID} length up : {len(codons_upstream)}")
 
-                    # Get downstream nucleotides
-                    end = position - 2 # -2 because in seq[a:b] b is not included
-                    if abs(position - 2  - orf.exon.start) > codons:
-                        start = position - 2 - codons
+                    ## Get downstream nucleotides
+                    end = POSITION - 2 # -2 because in seq[a:b] b is not included
+                    if abs(POSITION - 2  - EXON_END) > CODONS:
+                        start = POSITION - 2 - CODONS
                     else:
-                        start = orf.exon.start - 1 # -1 for python indexing
+                        start = EXON_END
+
+                    if end < start:
+                        print(f"start : {start}")
+                        print(f"end : {end}")
+                        print(f"orf.exon.end : {orf.exon.end}")
+                        print(f"position : {POSITION}")
+                        print(f"orf.ID : {orf.ID}")
+                        print(f"codons : {CODONS}")
+                        print(f"orf.ribostart : {orf.ribostart}")
+                        raise ValueError
                     
                     codons_downstream = str(Seq(sequence["seq"][start:end]).reverse_complement())
-                    if len(codons_downstream) > codons:
+                    
+                    if len(codons_downstream) > CODONS:
                         print(f"{orf.ID} length down : {len(codons_downstream)}")
                     
 
             else:
 
-                if strand == "+":
+                if STRAND == "+":
 
                     # Get upstream nucleotides
                     # Example : position = 20, NB_NT = 4 => seq[16:20] got us the nt 16, 17, 18, 19 hence 4 nt => good
-                    start = position - NB_NT 
+                    start = POSITION - NB_NT 
                     if start < 0:
                         start = 0
-                    end = position # Not position - 1 because in seq[a:b] b is not included
+                    end = POSITION # Not position - 1 because in seq[a:b] b is not included
                     codons_upstream = sequence["seq"][start:end]
 
                     # Get downstream nucleotides
-                    start = position + 3
+                    start = POSITION + 3
                     end = start + NB_NT 
                     if end > sequence["len"]:
                         end = sequence["len"]+1 # +1 because in seq[a:b] b is not included and in python even if b is out of range, it doesn't raise an error
                     codons_downstream = sequence["seq"][start:end]
 
-                elif strand == "-":
+                elif STRAND == "-":
 
                     # Get upstreams nucleotides
-                    start = position + 1
+                    start = POSITION + 1
                     end = start + NB_NT + 1 # +1 because in seq[a:b] b is not included
                     if end > sequence["len"]:
                         end = sequence["len"]+1
                     codons_upstream = str(Seq(sequence["seq"][start:end]).reverse_complement())
 
                     # Get downstream nucleotides
-                    start = position - 2 - NB_NT
+                    start = POSITION - 2 - NB_NT
                     if start < 0:
                         start = 0
-                    end = position - 2 # -2 because in seq[a:b] b is not included
+                    end = POSITION - 2 # -2 because in seq[a:b] b is not included
                     codons_downstream = str(Seq(sequence["seq"][start:end]).reverse_complement())
 
             orf.upstream = str(codons_upstream)
             orf.downstream = str(codons_downstream)
-                    
+    
+    def returnSplicedExons(self,sequence):
+
+
+        tmpSeq = str()
+        for exon in self.exons_list:
+
+            tmpSeq += sequence[exon.start:exon.end+1] if self.sense == "+" else str(Seq(sequence[exon.start:exon.end+1]).reverse_complement())
+
+        return tmpSeq
+
+     
+
 class Exon(GenomicFeature):
 
     def __init__(self, ID, start, end, gene : Gene, abs_frame : int):
@@ -252,10 +312,12 @@ class Orf(GenomicFeature):
             self.ribostart = int(self.start - 3*self.ribospike)
         else:
             self.ribostart = int(self.start + 3*self.ribospike)
+        
+        self.relRiboStart = self.ribostart 
             
         
         
-    def locRiboStart(self): 
+    def locateRiboStart(self): 
 
         if self.gene.sense == "+":
             for exon in self.gene.exons_list:
@@ -264,9 +326,7 @@ class Orf(GenomicFeature):
                     self.ribostartLocalisation = "exon"
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        print(f"Problem with orf {self.ID} gene {self.gene.ID}")
-                        print(f"Multi : {self.gene.multi}, RS : {self.ribostart}")
-                        print(f"Exon start : {self.exon.start}")
+                        raise ValueError(f"rel_frame = 0 for {self.ID}")
                     return 
                 
             if self.gene.start <= self.ribostart < self.gene.exons_list[0].start:
@@ -306,11 +366,8 @@ class Orf(GenomicFeature):
                     self.ribostartLocalisation = "exon"
                     self.rel_frame = abs(self.exon.start - self.ribostart) % 3
                     if self.rel_frame == 0:
-                        print(f"Problem with orf {self.ID} gene {self.gene.ID}")
-                        print(f"Multi : {self.gene.multi}, RS : {self.ribostart}")
-                        print(f"Exon start : {self.exon.start}")
-                        
-                    return
+                        raise ValueError(f"rel_frame = 0 for {self.ID}")
+                    return 
                 
             if self.gene.exons_list[0].start < self.ribostart <= self.gene.start:
                 self.ribostartLocalisation = "5UTR"
@@ -342,7 +399,7 @@ class Orf(GenomicFeature):
                 self.exon = "NA"
                 return
             
-    def get_exon_dist(self):
+    def getExonDist(self):
 
         if self.exon != "NA":
 

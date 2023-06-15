@@ -41,7 +41,7 @@ def extract_data(grouped):
         if "gene" in GFF_POLARS.filter(pl.col("ID") == overlapped_feature_name)["Type"].unique().to_list(): 
 
             # Initialize gene object with the name of the overlapped feature
-            gene = utils.init_gene_object(overlapped_feature_name, GFF)
+            gene = utils.initGeneObject(overlapped_feature_name, GFF)
             # Iterate over every ORF that overlaps the gene
             for row in data.iter_rows(named = True):
 
@@ -62,13 +62,13 @@ def extract_data(grouped):
                     p2 = row["Num_p2"]
                     )
 
-                orf.locRiboStart()
-                orf.get_exon_dist()
+                orf.locateRiboStart()
+                orf.getExonDist()
 
                 gene.add_orf(key = orf.ID, 
                             value = orf)
 
-            gene.get_adjacent_nucleotides(FASTA_DICT[gene.chromosome])
+            gene.getAdjTest(FASTA_DICT[gene.chromosome])
             gene_list.append(gene)
             
     print("\nNumber of ORFs processed : ")
