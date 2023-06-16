@@ -2,6 +2,7 @@ from Bio.Seq import Seq
 from collections import OrderedDict as OD
 from data import MAX_CODONS
 from data import NB_NT
+from warnings import warn
 
 class GenomicFeature:
 
@@ -83,7 +84,57 @@ class Gene(GenomicFeature):
 
                 exon.number = i 
 
-    
+
+    def returnSplicedExons(self, sequence):
+
+
+            tmpSeq = str()
+            for exon in self.exons_list:
+
+                START = exon.start - 1
+                END = exon.end - 1
+
+                if self.sense == "+":
+                    tmpSeq += sequence[START-exon.abs_frame:END+1]  
+                elif self.sense == "-":
+                    tmpSeq += str(Seq(sequence[END:START+exon.abs_frame+1]).reverse_complement())
+                    
+            if len(tmpSeq)%3 != 0:
+                warn(f"{self.ID} Multi : {self.multi} Sense : {self.sense}")
+            return tmpSeq
+
+    def getAdjTest(self, SeqRecord):
+        
+        CODONS = MAX_CODONS * 3 + 2 # Enough nucleotides to get MAX_CODONS codons regardless of relative frame 
+        splicedExons = self.returnSplicedExons(SeqRecord["seq"])
+
+        for orf in self.orfs_list:
+
+            if orf.ribostartLocalisation == "exon":
+                POSITION = orf.distExon
+                SPLICED_START = 0
+                SPLICED_END = len(splicedExons)
+
+                # upstream sequence
+                if POSITION < CODONS:
+                    upstream = splicedExons[SPLICED_START:POSITION]
+                else:
+                    upstream = splicedExons[POSITION-CODONS:POSITION]
+
+                # downstream sequence
+                if POSITION+3+CODONS > SPLICED_END:
+                    downstream = splicedExons[POSITION+3:]
+                else:
+                    downstream = splicedExons[POSITION+3:POSITION+3+CODONS]
+
+                if len(upstream) > CODONS or len(downstream) > CODONS:
+                    warn(f"upstream : {len(upstream)} downstream : {len(downstream)} for {orf.ID}")
+
+                orf.upstream = upstream
+                orf.downstream = downstream
+                
+
+
 
     def sort_aorfs(self):
 
@@ -249,15 +300,7 @@ class Gene(GenomicFeature):
             orf.upstream = str(codons_upstream)
             orf.downstream = str(codons_downstream)
     
-    def returnSplicedExons(self,sequence):
-
-
-        tmpSeq = str()
-        for exon in self.exons_list:
-
-            tmpSeq += sequence[exon.start:exon.end+1] if self.sense == "+" else str(Seq(sequence[exon.start:exon.end+1]).reverse_complement())
-
-        return tmpSeq
+    
 
      
 
@@ -305,7 +348,7 @@ class Orf(GenomicFeature):
         self.rel_frame = None
         self.ribostartLocalisation = None
         self.exon = None
-        self.dist_exon = None
+        self.distExon = None
 
         if self.gene.sense == "-":
             self.start, self.end = self.end, self.start
@@ -403,21 +446,19 @@ class Orf(GenomicFeature):
 
         if self.exon != "NA":
 
-            if self.gene.multi == False:
+            if self.gene.multi == False or self.exon.number == 0:
                 
-                self.exon_dist = abs(self.exon.start - self.ribostart)
+                self.distExon = abs(self.exon.start - self.ribostart)
             
             else:
+                    
+                dist = 0
+                for i in range(self.exon.number):
 
-                if self.exon.number > 0:
+                    dist += self.gene.exons_list[i].length
 
-                    dist = 0
-                    for i in range(self.exon.number):
-
-                        dist += self.gene.exons_list[i].length
-
-                    dist += abs(self.exon.start - self.ribostart) + self.exon.abs_frame 
-                    self.exon_dist = dist
+                dist += abs(self.exon.start - self.ribostart) + self.exon.abs_frame 
+                self.distExon = dist
                     
 
 

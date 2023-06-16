@@ -1,7 +1,9 @@
 import polars as pl
 import re
-from data import ORF_DF_COLUMNS, GFF_POLARS, RIBO_DF_COLUMNS 
 from classes import Gene, Exon
+from Bio.Seq import Seq
+
+from data import ORF_DF_COLUMNS, GFF_POLARS, RIBO_DF_COLUMNS 
 
 
 def getGoodColumnNames(columns):
@@ -155,6 +157,9 @@ def check_double_overlap(row : tuple):
 
         orf["Ovp_gene"] = overlaps[0]
         return tuple(orf.values())
+
+
+
 
 
 def add_chromosome_ID(ribo_row : tuple): # deprecated
